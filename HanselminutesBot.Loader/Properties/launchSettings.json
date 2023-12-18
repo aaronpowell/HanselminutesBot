@@ -1,0 +1,10 @@
+{
+  "profiles": {
+    "HanselminutesBot.Loader": {
+      "commandName": "Project",
+      "environmentVariables": {
+        "DOTNET_ENVIRONMENT": "Development"
+      }
+    }
+  }
+}
