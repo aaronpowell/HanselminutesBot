@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk.Worker">
 
   <PropertyGroup>
     <OutputType>Exe</OutputType>
@@ -6,6 +6,8 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Include="CommaListJsonParser.fs" />
+    <Compile Include="Worker.fs" />
     <Compile Include="Program.fs" />
   </ItemGroup>
 
@@ -13,18 +15,17 @@
     <PackageReference Include="azure.ai.openai" />
     <PackageReference Include="FSharp.Core" />
     <PackageReference Include="Microsoft.Extensions.Configuration.Json" />
+    <PackageReference Include="Microsoft.Extensions.Hosting" />
+    <PackageReference Include="Microsoft.KernelMemory.WebClient" />
     <PackageReference Include="System.ServiceModel.Syndication" />
   </ItemGroup>
   <ItemGroup>
-    <Content Include="appsettings.Development.json">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
-    <Content Include="appsettings.json">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
     <Content Include="Data\hanselminutes.rss">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\HanselminutesBot.ServiceDefaults\HanselminutesBot.ServiceDefaults.csproj" />
   </ItemGroup>
 
 </Project>

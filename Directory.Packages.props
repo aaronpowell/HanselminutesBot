@@ -3,9 +3,23 @@
     <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
   </PropertyGroup>
   <ItemGroup>
+    <PackageVersion Include="Aspire.Hosting" Version="8.0.0-preview.2.23619.3" />
+    <PackageVersion Include="Aspire.Npgsql" Version="8.0.0-preview.2.23619.3" />
     <PackageVersion Include="azure.ai.openai" Version="1.0.0-beta.12" />
     <PackageVersion Include="FSharp.Core" Version="8.0.100" />
     <PackageVersion Include="Microsoft.Extensions.Configuration.Json" Version="8.0.0" />
+    <PackageVersion Include="Microsoft.Extensions.Hosting" Version="8.0.0" />
+    <PackageVersion Include="Microsoft.KernelMemory.Core" Version="0.23.231219.1" />
+    <PackageVersion Include="Microsoft.KernelMemory.Postgres" Version="0.1.231220.11" />
+    <PackageVersion Include="Microsoft.KernelMemory.WebClient" Version="0.23.231219.1" />
     <PackageVersion Include="System.ServiceModel.Syndication" Version="8.0.0" />
+    <PackageVersion Include="Microsoft.Extensions.Http.Resilience" Version="8.0.0" />
+    <PackageVersion Include="Microsoft.Extensions.ServiceDiscovery" Version="8.0.0-preview.1.23557.2" />
+    <PackageVersion Include="OpenTelemetry.Exporter.OpenTelemetryProtocol" Version="1.7.0-alpha.1" />
+    <PackageVersion Include="OpenTelemetry.Extensions.Hosting" Version="1.7.0-alpha.1" />
+    <PackageVersion Include="OpenTelemetry.Instrumentation.AspNetCore" Version="1.6.0-beta.2" />
+    <PackageVersion Include="OpenTelemetry.Instrumentation.GrpcNetClient" Version="1.6.0-beta.2" />
+    <PackageVersion Include="OpenTelemetry.Instrumentation.Http" Version="1.6.0-beta.2" />
+    <PackageVersion Include="OpenTelemetry.Instrumentation.Runtime" Version="1.5.1" />
   </ItemGroup>
 </Project>
