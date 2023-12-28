@@ -9,7 +9,9 @@ string embeddingsDeployment = builder.Configuration["OpenAI:EmbeddingsDeployment
 
 IResourceBuilder<PostgresDatabaseResource> postgres = builder.AddPostgresContainer("db")
     .WithEnvironment("POSTGRES_DB", "podcasts")
+    // Use a custom container image that has pgvector installed
     .WithAnnotation(new ContainerImageAnnotation { Image = "ankane/pgvector", Tag = "latest" })
+    // Mount the database scripts into the container that will configure pgvector
     .WithVolumeMount("./database", "/docker-entrypoint-initdb.d", VolumeMountType.Bind)
     .AddDatabase("podcasts");
 
