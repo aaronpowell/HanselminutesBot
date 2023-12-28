@@ -8,7 +8,11 @@ open Azure
 
 let builder = Host.CreateApplicationBuilder()
 
-builder.Services.AddHttpClient(fun (client: HttpClient) -> client.BaseAddress <- Uri("http://memory")) |> ignore
+builder
+    .Services
+    .AddHttpClient(fun (client: HttpClient) -> client.BaseAddress <- Uri("http://memory"))
+    .AddStandardResilienceHandler(fun opts -> opts.TotalRequestTimeout.Timeout <- TimeSpan.FromMinutes 5)
+    |> ignore
 
 builder.Services.AddSingleton<IKernelMemory>(fun (sp: IServiceProvider) ->
     let httpClient = sp.GetRequiredService<HttpClient>()

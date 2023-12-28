@@ -2,10 +2,13 @@ using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
+using Microsoft.Extensions.Http.Resilience;
 using Microsoft.Extensions.Logging;
 using OpenTelemetry.Logs;
 using OpenTelemetry.Metrics;
 using OpenTelemetry.Trace;
+using Polly;
+using System.Net;
 
 namespace Microsoft.Extensions.Hosting;
 
@@ -22,7 +25,42 @@ public static class Extensions
         builder.Services.ConfigureHttpClientDefaults(http =>
         {
             // Turn on resilience by default
-            http.AddStandardResilienceHandler();
+            //http.AddStandardResilienceHandler();
+
+            http.AddResilienceHandler(
+                "CustomPipeline",
+                static builder =>
+                {
+                    // See: https://www.pollydocs.org/strategies/retry.html
+                    builder.AddRetry(new HttpRetryStrategyOptions
+                    {
+                        // Customize and configure the retry logic.
+                        BackoffType = DelayBackoffType.Exponential,
+                        MaxRetryAttempts = 5,
+                        UseJitter = true
+                    });
+
+                    // See: https://www.pollydocs.org/strategies/circuit-breaker.html
+                    builder.AddCircuitBreaker(new HttpCircuitBreakerStrategyOptions
+                    {
+                        // Customize and configure the circuit breaker logic.
+                        SamplingDuration = TimeSpan.FromSeconds(10),
+                        FailureRatio = 0.2,
+                        MinimumThroughput = 3,
+                        ShouldHandle = static args =>
+                        {
+                            return ValueTask.FromResult(args is
+                            {
+                                Outcome.Result.StatusCode:
+                                    HttpStatusCode.RequestTimeout or
+                                        HttpStatusCode.TooManyRequests
+                            });
+                        }
+                    });
+
+                    // See: https://www.pollydocs.org/strategies/timeout.html
+                    builder.AddTimeout(TimeSpan.FromMinutes(5));
+                });
 
             // Turn on service discovery by default
             http.UseServiceDiscovery();

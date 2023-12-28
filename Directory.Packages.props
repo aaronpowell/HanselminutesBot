@@ -4,6 +4,7 @@
   </PropertyGroup>
   <ItemGroup>
     <PackageVersion Include="Aspire.Hosting" Version="8.0.0-preview.2.23619.3" />
+    <PackageVersion Include="Aspire.Hosting.Azure" Version="8.0.0-preview.2.23619.3" />
     <PackageVersion Include="Aspire.Npgsql" Version="8.0.0-preview.2.23619.3" />
     <PackageVersion Include="azure.ai.openai" Version="1.0.0-beta.12" />
     <PackageVersion Include="FSharp.Core" Version="8.0.100" />

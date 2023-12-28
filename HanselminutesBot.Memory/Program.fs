@@ -9,6 +9,7 @@ open Microsoft.KernelMemory.Postgres
 open Microsoft.AspNetCore.Http
 open Microsoft.Extensions.Logging
 open Microsoft.KernelMemory.WebService
+open Microsoft.KernelMemory.ContentStorage.AzureBlobs
 
 let builder = WebApplication.CreateBuilder()
 
@@ -32,9 +33,16 @@ let postgresConfig = PostgresConfig()
 postgresConfig.ConnectionString <- builder.Configuration.["ConnectionStrings:podcasts"]
 postgresConfig.TableNamePrefix <- "km_"
 
+let storageConfig = AzureBlobsConfig()
+storageConfig.ConnectionString <- builder.Configuration.["ConnectionStrings:kernelmemory"]
+storageConfig.Container <- "kernelmemory"
+storageConfig.Auth <- AzureBlobsConfig.AuthTypes.ConnectionString
+
 let memory =
     KernelMemoryBuilder(builder.Services)
         .WithPostgres(postgresConfig)
+        .WithAzureBlobsStorage(storageConfig)
+        //.WithSimpleFileStorage("kernel-memory")
         .WithAzureOpenAITextEmbeddingGeneration(embeddingsConfig)
         .WithAzureOpenAITextGeneration(textGenConfig)
         .Build()

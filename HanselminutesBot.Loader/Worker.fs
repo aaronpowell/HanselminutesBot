@@ -104,7 +104,7 @@ type Worker(logger: ILogger<Worker>, client: OpenAIClient, memoryClient: IKernel
                                      tags.Add("uri", mr.Uri.ToString())
                                      sprintf "Importing %s" mr.Title |> logger.LogInformation
                                      memoryClient.ImportTextAsync(mr.Summary, mr.Id, tags, "summaries", Seq.empty, cancellationToken))
-            
+
             let! _ = Task.WhenAll importTasks
 
             sprintf "Imported %d records" (Seq.length memoryRecords) |> logger.LogInformation

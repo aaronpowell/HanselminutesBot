@@ -9,12 +9,17 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Content Remove="appsettings.Development.json" />
+  </ItemGroup>
+
+  <ItemGroup>
     <ProjectReference Include="..\HanselminutesBot.Loader\HanselminutesBot.Loader.fsproj" />
     <ProjectReference Include="..\HanselminutesBot.Memory\HanselminutesBot.Memory.fsproj" />
   </ItemGroup>
 
   <ItemGroup>
     <PackageReference Include="Aspire.Hosting" />
+    <PackageReference Include="Aspire.Hosting.Azure" />
   </ItemGroup>
 
 </Project>
