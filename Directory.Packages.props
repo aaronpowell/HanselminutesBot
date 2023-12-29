@@ -3,6 +3,7 @@
     <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
   </PropertyGroup>
   <ItemGroup>
+    <PackageVersion Include="Aspire.Azure.Storage.Queues" Version="8.0.0-preview.2.23619.3" />
     <PackageVersion Include="Aspire.Hosting" Version="8.0.0-preview.2.23619.3" />
     <PackageVersion Include="Aspire.Hosting.Azure" Version="8.0.0-preview.2.23619.3" />
     <PackageVersion Include="Aspire.Npgsql" Version="8.0.0-preview.2.23619.3" />

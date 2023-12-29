@@ -5,11 +5,13 @@ VisualStudioVersion = 17.9.34319.32
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{6EC3EE1D-3C4E-46DD-8F32-0CC8E7565705}") = "HanselminutesBot.Loader", "HanselminutesBot.Loader\HanselminutesBot.Loader.fsproj", "{50084473-4E10-4E7D-9357-449C36B00517}"
 EndProject
-Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "HanselminutesBot.Memory", "HanselminutesBot.Memory\HanselminutesBot.Memory.fsproj", "{F9D733EF-149E-4308-BBF6-82845A7779B2}"
+Project("{6EC3EE1D-3C4E-46DD-8F32-0CC8E7565705}") = "HanselminutesBot.Memory", "HanselminutesBot.Memory\HanselminutesBot.Memory.fsproj", "{F9D733EF-149E-4308-BBF6-82845A7779B2}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "HanselminutesBot.AppHost", "HanselminutesBot.AppHost\HanselminutesBot.AppHost.csproj", "{541271B2-9F75-4016-88A5-DC31FD0852A3}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "HanselminutesBot.AppHost", "HanselminutesBot.AppHost\HanselminutesBot.AppHost.csproj", "{541271B2-9F75-4016-88A5-DC31FD0852A3}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "HanselminutesBot.ServiceDefaults", "HanselminutesBot.ServiceDefaults\HanselminutesBot.ServiceDefaults.csproj", "{FFD747E7-DD09-4AEC-8E67-D505D468FF36}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "HanselminutesBot.Frontend", "HanselminutesBot.Frontend\HanselminutesBot.Frontend.csproj", "{41C0BF20-14E5-4ED1-966F-A87F4056D4A9}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -33,6 +35,10 @@ Global
 		{FFD747E7-DD09-4AEC-8E67-D505D468FF36}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{FFD747E7-DD09-4AEC-8E67-D505D468FF36}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{FFD747E7-DD09-4AEC-8E67-D505D468FF36}.Release|Any CPU.Build.0 = Release|Any CPU
+		{41C0BF20-14E5-4ED1-966F-A87F4056D4A9}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{41C0BF20-14E5-4ED1-966F-A87F4056D4A9}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{41C0BF20-14E5-4ED1-966F-A87F4056D4A9}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{41C0BF20-14E5-4ED1-966F-A87F4056D4A9}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

@@ -1,3 +1,4 @@
+using HanselminutesBot.ServiceDefaults;
 using Microsoft.Extensions.Hosting;
 using Projects;
 
@@ -17,6 +18,8 @@ if (builder.Environment.IsDevelopment())
 
 IResourceBuilder<AzureBlobStorageResource> blob = storage
     .AddBlobs("kernelmemory");
+
+IResourceBuilder<AzureQueueStorageResource> queue = storage.AddQueues(ServiceConstants.QueueServiceName);
 
 IResourceBuilder<PostgresDatabaseResource> postgres = builder.AddPostgresContainer("db")
     .WithEnvironment("POSTGRES_DB", "podcasts")
@@ -39,6 +42,11 @@ builder.AddProject<HanselminutesBot_Loader>("loader")
     .WithEnvironment("OpenAI__Key", key)
     .WithEnvironment("OpenAI__ChatDeployment", chatDeployment)
     .WithEnvironment("OpenAI__EmbeddingsDeployment", embeddingsDeployment)
-    .WithReference(memory);
+    .WithReference(memory)
+    .WithReference(queue);
+
+builder.AddProject<HanselminutesBot_Frontend>("frontend")
+    .WithReference(memory)
+    .WithReference(queue);
 
 builder.Build().Run();

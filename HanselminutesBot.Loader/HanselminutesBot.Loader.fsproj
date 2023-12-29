@@ -12,6 +12,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <PackageReference Include="Aspire.Azure.Storage.Queues" />
     <PackageReference Include="azure.ai.openai" />
     <PackageReference Include="FSharp.Core" />
     <PackageReference Include="Microsoft.Extensions.Configuration.Json" />

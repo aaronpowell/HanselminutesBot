@@ -12,6 +12,8 @@ open Azure.AI.OpenAI
 open System.Text.Json
 open System.Text.Json.Serialization
 open Microsoft.KernelMemory
+open Azure.Storage.Queues
+open HanselminutesBot.ServiceDefaults
 
 type CompletionPayload =
   { [<JsonConverter(typeof<CommaListJsonParser.CommaListJsonConverter>)>] speakers: string list
@@ -84,28 +86,50 @@ let buildMemoryRecord (feed: SyndicationFeed) (client: OpenAIClient) =
         with
         | _ -> mr)
 
-type Worker(logger: ILogger<Worker>, client: OpenAIClient, memoryClient: IKernelMemory) =
+let importMemoryRecord (memoryClient: IKernelMemory) (logger: ILogger) cancellationToken (mr: MemoryRecord) =
+    let tags = TagCollection()
+    tags.Add("title", mr.Title)
+    tags.Add("date", mr.Date.ToString("yyyy-MM-dd"))
+    mr.Speakers |> Seq.iter(fun speaker -> tags.Add("speaker", speaker))
+    mr.Topics |> Seq.iter(fun topic -> tags.Add("topic", topic))
+    tags.Add("uri", mr.Uri.ToString())
+    sprintf "Importing %s" mr.Title |> logger.LogInformation
+    memoryClient.ImportTextAsync(mr.Summary, mr.Id, tags, "summaries", Seq.empty, cancellationToken)
+
+type Worker(
+    logger: ILogger<Worker>,
+    client: OpenAIClient,
+    memoryClient: IKernelMemory,
+    queueServiceClient: QueueServiceClient) =
     inherit BackgroundService()
 
     override __.ExecuteAsync(cancellationToken) =
         task {
-            let file = File.OpenRead(Path.Join(Directory.GetCurrentDirectory(), "Data", "hanselminutes.rss"))
-            let feed = SyndicationFeed.Load(XmlReader.Create file)
+            let queueClient = queueServiceClient.GetQueueClient ServiceConstants.QueueServiceName
 
-            let memoryRecords = buildMemoryRecord feed client
+            let! _ = queueClient.CreateIfNotExistsAsync(dict [], cancellationToken)
 
-            let importTasks = memoryRecords
-                              |> Seq.map(fun mr ->
-                                     let tags = TagCollection()
-                                     tags.Add("title", mr.Title)
-                                     tags.Add("date", mr.Date.ToString("yyyy-MM-dd"))
-                                     mr.Speakers |> Seq.iter(fun speaker -> tags.Add("speaker", speaker))
-                                     mr.Topics |> Seq.iter(fun topic -> tags.Add("topic", topic))
-                                     tags.Add("uri", mr.Uri.ToString())
-                                     sprintf "Importing %s" mr.Title |> logger.LogInformation
-                                     memoryClient.ImportTextAsync(mr.Summary, mr.Id, tags, "summaries", Seq.empty, cancellationToken))
+            while not cancellationToken.IsCancellationRequested do
+                let! messages = queueClient.ReceiveMessagesAsync(32, TimeSpan.FromSeconds 30.0, cancellationToken)
 
-            let! _ = Task.WhenAll importTasks
+                let importer' = importMemoryRecord memoryClient logger cancellationToken
 
-            sprintf "Imported %d records" (Seq.length memoryRecords) |> logger.LogInformation
-}
+                let! _ =
+                    messages.Value
+                    |> Seq.map(fun _ ->
+                        task {
+                            let file = File.OpenRead(Path.Join(Directory.GetCurrentDirectory(), "Data", "hanselminutes.rss"))
+                            let feed = SyndicationFeed.Load(XmlReader.Create file)
+
+                            let memoryRecords = buildMemoryRecord feed client
+
+                            let importTasks = memoryRecords |> Seq.map importer'
+
+                            let! _ = Task.WhenAll importTasks
+
+                            sprintf "Imported %d records" (Seq.length memoryRecords) |> logger.LogInformation
+                        })
+                    |> Task.WhenAll
+
+                logger.LogInformation "Waiting for next load request"
+        }

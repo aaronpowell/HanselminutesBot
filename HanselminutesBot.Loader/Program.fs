@@ -5,12 +5,13 @@ open System
 open System.Net.Http
 open Azure.AI.OpenAI
 open Azure
+open HanselminutesBot.ServiceDefaults
 
 let builder = Host.CreateApplicationBuilder()
 
 builder
     .Services
-    .AddHttpClient(fun (client: HttpClient) -> client.BaseAddress <- Uri("http://memory"))
+    .AddHttpClient(fun client -> client.BaseAddress <- Uri "http://memory")
     .AddStandardResilienceHandler(fun opts -> opts.TotalRequestTimeout.Timeout <- TimeSpan.FromMinutes 5)
     |> ignore
 
@@ -30,10 +31,12 @@ builder.Services.AddSingleton<OpenAIClient>(fun (_) ->
         | null -> failwith "OpenAI:Key not found in configuration"
         | value -> value
 
-    OpenAIClient(Uri(endpoint), AzureKeyCredential(key))) |> ignore
+    OpenAIClient(Uri endpoint, AzureKeyCredential key)) |> ignore
 
 builder.Services.AddHostedService<Worker>() |> ignore
 builder.AddServiceDefaults() |> ignore
+
+builder.AddAzureQueueService ServiceConstants.QueueServiceName
 
 let host = builder.Build()
 host.Run()
