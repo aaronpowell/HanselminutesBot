@@ -75,6 +75,30 @@ app.MapPost(Constants.HttpUploadEndpoint, UploadRequest(fun request memory logge
             return TypedResults.Accepted(url, uploadAccepted) :> IResult
     })) |> ignore
 
+type GetIndexRequest = Func<HttpRequest, IKernelMemory, ILogger<IKernelMemory>, CancellationToken, Task<IResult>>
+app.MapGet(Constants.HttpIndexesEndpoint, GetIndexRequest(fun _ memory logger ct ->
+    task {
+        logger.LogTrace "New index list HTTP request";
+
+        let result = IndexCollection();
+        let! list = memory.ListIndexesAsync ct;
+
+        for index in list do
+            result.Results.Add index |> ignore
+
+        return TypedResults.Ok result :> IResult
+    })) |> ignore
+
+type AskRequest = Func<MemoryQuery, IKernelMemory, ILogger<IKernelMemory>, CancellationToken, Task<IResult>>
+app.MapPost(Constants.HttpAskEndpoint, AskRequest(fun query memory logger ct ->
+    task {
+        logger.LogTrace "New search request"
+
+        let! answer = memory.AskAsync(query.Question, query.Index, null, query.Filters, query.MinRelevance, ct)
+
+        return TypedResults.Ok answer :> IResult
+    })) |> ignore
+
 app.MapDefaultEndpoints() |> ignore
 
 app.Run()

@@ -1,0 +1,60 @@
+﻿@page "/manage"
+@using Azure.Storage.Queues
+@using HanselminutesBot.ServiceDefaults
+@inject IKernelMemory Memory
+@inject QueueServiceClient QueueServiceClient
+@rendermode InteractiveServer
+
+<PageTitle>Manage</PageTitle>
+
+<h1>Management</h1>
+
+<div class="row">
+    <div class="col">
+        <h2>Indexes</h2>
+        @if (!Indexes.Any())
+        {
+            <p>There are no loaded indexes.</p>
+        }
+        else
+        {
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>Name</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var index in Indexes)
+                    {
+                        <tr>
+                            <td>@index.Name</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        }
+    </div>
+
+    <div class="col">
+        <button @onclick="IndexDocuments">Trigger rebuild</button>
+    </div>
+</div>
+
+@code {
+    private IEnumerable<IndexDetails> Indexes = Enumerable.Empty<IndexDetails>();
+
+    protected override async Task OnInitializedAsync()
+    {
+        Indexes = await Memory.ListIndexesAsync();
+    }
+
+    private async Task IndexDocuments()
+    {
+        var queueClient = QueueServiceClient.GetQueueClient(ServiceConstants.QueueServiceName);
+
+        await queueClient.CreateIfNotExistsAsync();
+
+        await queueClient.SendMessageAsync("begin");
+    }
+}

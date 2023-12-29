@@ -1,7 +1,20 @@
 ﻿@page "/"
+@rendermode InteractiveServer
+@inject IKernelMemory Memory
 
 <PageTitle>Home</PageTitle>
 
-<h1>Hello, world!</h1>
+<h1>Welcome to HanselminutesBot</h1>
 
-Welcome to your new app.
+Wanting to learn something today? Let's find a Hanselminutes podcast episode that can help you out.
+
+<button @onclick="DoAsk">Ask</button>
+
+@code {
+    private async Task DoAsk()
+    {
+        var response = await Memory.AskAsync("Where can I learn coding for free?", minRelevance: 0.8);
+
+        Console.WriteLine(response.ToJson());
+    }
+}

@@ -1,14 +1,30 @@
 using HanselminutesBot.Frontend.Components;
+using HanselminutesBot.ServiceDefaults;
+using Microsoft.KernelMemory;
 
-var builder = WebApplication.CreateBuilder(args);
+WebApplicationBuilder builder = WebApplication.CreateBuilder(args);
 
 builder.AddServiceDefaults();
+
+builder.Services
+.AddHttpClient("memory", client =>
+{
+    client.BaseAddress = new("http://memory");
+});
+
+builder.Services.AddTransient<IKernelMemory>(sp =>
+{
+    HttpClient httpClient = sp.GetRequiredService<HttpClient>();
+    return new MemoryWebClient("http://memory", httpClient);
+});
+
+builder.AddAzureQueueService(ServiceConstants.QueueServiceName);
 
 // Add services to the container.
 builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();
 
-var app = builder.Build();
+WebApplication app = builder.Build();
 
 app.MapDefaultEndpoints();
 

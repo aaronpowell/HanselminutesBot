@@ -94,7 +94,7 @@ let importMemoryRecord (memoryClient: IKernelMemory) (logger: ILogger) cancellat
     mr.Topics |> Seq.iter(fun topic -> tags.Add("topic", topic))
     tags.Add("uri", mr.Uri.ToString())
     sprintf "Importing %s" mr.Title |> logger.LogInformation
-    memoryClient.ImportTextAsync(mr.Summary, mr.Id, tags, "summaries", Seq.empty, cancellationToken)
+    memoryClient.ImportTextAsync(mr.Summary, mr.Id, tags, null, Seq.empty, cancellationToken)
 
 type Worker(
     logger: ILogger<Worker>,
