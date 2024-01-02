@@ -1,6 +1,8 @@
 ﻿@page "/manage"
 @using Azure.Storage.Queues
 @using HanselminutesBot.ServiceDefaults
+@using System.ServiceModel.Syndication
+@using System.Xml
 @inject IKernelMemory Memory
 @inject QueueServiceClient QueueServiceClient
 @rendermode InteractiveServer
@@ -11,24 +13,24 @@
 
 <div class="row">
     <div class="col">
-        <h2>Indexes</h2>
-        @if (!Indexes.Any())
+        <h2>Episodes</h2>
+        @if (!Episodes.Any())
         {
-            <p>There are no loaded indexes.</p>
+            <p>There are no loaded episodes.</p>
         }
         else
         {
             <table class="table">
                 <thead>
                     <tr>
-                        <th>Name</th>
+                        <th>Title</th>
                     </tr>
                 </thead>
                 <tbody>
-                    @foreach (var index in Indexes)
+                    @foreach (var index in Episodes)
                     {
                         <tr>
-                            <td>@index.Name</td>
+                            <td>@index.Title</td>
                         </tr>
                     }
                 </tbody>
@@ -42,11 +44,19 @@
 </div>
 
 @code {
-    private IEnumerable<IndexDetails> Indexes = Enumerable.Empty<IndexDetails>();
+    record PodcastItem(string Title, string Id);
+
+    private List<PodcastItem> Episodes = [];
 
     protected override async Task OnInitializedAsync()
     {
-        Indexes = await Memory.ListIndexesAsync();
+        using var file = File.OpenRead("../HanselminutesBot.Loader/Data/hanselminutes.rss");
+        var feed = SyndicationFeed.Load(XmlReader.Create(file));
+
+        foreach (var item in feed.Items)
+        {
+            Episodes.Add(new PodcastItem(item.Title.Text, item.Id));
+        }
     }
 
     private async Task IndexDocuments()

@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk.Web">
+﻿<Project Sdk="Microsoft.NET.Sdk.Web">
 
     <PropertyGroup>
         <TargetFramework>net8.0</TargetFramework>
@@ -7,12 +7,19 @@
     </PropertyGroup>
 
     <ItemGroup>
+      <None Include="..\HanselminutesBot.Loader\Data\hanselminutes.rss" Link="hanselminutes.rss">
+        <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      </None>
+    </ItemGroup>
+
+    <ItemGroup>
         <ProjectReference Include="..\HanselminutesBot.ServiceDefaults\HanselminutesBot.ServiceDefaults.csproj" />
     </ItemGroup>
 
     <ItemGroup>
         <PackageReference Include="Microsoft.KernelMemory.WebClient" />
         <PackageReference Include="Aspire.Azure.Storage.Queues" />
+        <PackageReference Include="System.ServiceModel.Syndication" />
     </ItemGroup>
 
 </Project>

@@ -99,6 +99,24 @@ app.MapPost(Constants.HttpAskEndpoint, AskRequest(fun query memory logger ct ->
         return TypedResults.Ok answer :> IResult
     })) |> ignore
 
+type DocumentStatusRequest = Func<string, string, IKernelMemory, ILogger<IKernelMemory>, CancellationToken, Task<IResult>>
+app.MapGet(Constants.HttpUploadStatusEndpoint, DocumentStatusRequest(fun index documentId memory logger ct ->
+    task {
+        logger.LogTrace "New document status request"
+
+        let index' = IndexExtensions.CleanName index;
+
+        if String.IsNullOrEmpty documentId then
+            return TypedResults.BadRequest "Document ID is required" :> IResult
+        else
+            let! status = memory.GetDocumentStatusAsync(index', documentId, ct)
+
+            return match status with
+                   | null -> TypedResults.NotFound "Document not found" :> IResult
+                   | pipeline when pipeline.Empty -> TypedResults.NotFound "Empty pipeline" :> IResult
+                   | _ -> TypedResults.Ok status :> IResult
+    })) |> ignore
+
 app.MapDefaultEndpoints() |> ignore
 
 app.Run()

@@ -8,13 +8,40 @@
 
 Wanting to learn something today? Let's find a Hanselminutes podcast episode that can help you out.
 
-<button @onclick="DoAsk">Ask</button>
+<div>
+    <p>What would you like to learn about?</p>
+    <div><textarea @bind="UserInput"></textarea></div>
+    <div><button @onclick="DoAsk">Find episodes</button></div>
+</div>
+
+@if (answer is not null)
+{
+    <div>
+        <h2>Answer</h2>
+        <p>@answer.Result</p>
+        <ul>
+            @foreach (var episode in answer.RelevantSources)
+            {
+                <li><a href="@episode.Partitions.First(p => p.Tags.ContainsKey("uri")).Tags["uri"]">Episode link.</a></li>
+            }
+        </ul>
+    </div>
+}
 
 @code {
+    private string UserInput = "";
+
+    private MemoryAnswer? answer = null;
+
     private async Task DoAsk()
     {
-        var response = await Memory.AskAsync("Where can I learn coding for free?", minRelevance: 0.8);
+        if (string.IsNullOrWhiteSpace(UserInput))
+        {
+            return;
+        }
 
-        Console.WriteLine(response.ToJson());
+        var response = await Memory.AskAsync(UserInput, minRelevance: 0.8);
+
+        answer = response;
     }
 }
