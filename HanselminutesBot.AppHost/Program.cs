@@ -1,6 +1,7 @@
 using HanselminutesBot.ServiceDefaults;
 using Microsoft.Extensions.Hosting;
 using Projects;
+using System.Net.Sockets;
 
 var builder = DistributedApplication.CreateBuilder(args);
 
@@ -21,12 +22,26 @@ IResourceBuilder<AzureBlobStorageResource> blob = storage
 
 IResourceBuilder<AzureQueueStorageResource> queue = storage.AddQueues(ServiceConstants.QueueServiceName);
 
-IResourceBuilder<PostgresDatabaseResource> postgres = builder.AddPostgresContainer("db")
+IResourceBuilder<PostgresContainerResource> postgresContainerDefinition = builder
+    .AddPostgresContainer("db", port: builder.Configuration["Aspire:Postgres:Port"] switch
+    {
+        null => null,
+        string port => int.Parse(port)
+    }, password: builder.Configuration["Aspire:Postgres:Password"])
     .WithEnvironment("POSTGRES_DB", "podcasts")
     // Use a custom container image that has pgvector installed
     .WithAnnotation(new ContainerImageAnnotation { Image = "ankane/pgvector", Tag = "latest" })
     // Mount the database scripts into the container that will configure pgvector
-    .WithVolumeMount("./database", "/docker-entrypoint-initdb.d", VolumeMountType.Bind)
+    .WithVolumeMount("./database", "/docker-entrypoint-initdb.d", VolumeMountType.Bind);
+
+if (builder.Environment.IsDevelopment())
+{
+    postgresContainerDefinition
+    // Mount the Postgres data directory into the container so that the database is persisted
+    .WithVolumeMount("./database/persisted", "/var/lib/postgresql/data", VolumeMountType.Bind);
+}
+
+IResourceBuilder<PostgresDatabaseResource> postgres = postgresContainerDefinition
     .AddDatabase("podcasts");
 
 IResourceBuilder<ProjectResource> memory = builder.AddProject<HanselminutesBot_Memory>("memory")

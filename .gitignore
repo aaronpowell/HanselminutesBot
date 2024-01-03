@@ -3,3 +3,4 @@ obj
 .vs
 appsettings.*.json
 *.user
+/HanselminutesBot.AppHost/database/persisted
