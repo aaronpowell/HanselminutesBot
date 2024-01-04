@@ -10,6 +10,8 @@ open Microsoft.AspNetCore.Http
 open Microsoft.Extensions.Logging
 open Microsoft.KernelMemory.WebService
 open Microsoft.KernelMemory.ContentStorage.AzureBlobs
+open HanselminutesBot.ServiceDefaults
+open Microsoft.KernelMemory.Pipeline.Queue.AzureQueues
 
 let builder = WebApplication.CreateBuilder()
 
@@ -34,17 +36,21 @@ postgresConfig.ConnectionString <- builder.Configuration.["ConnectionStrings:pod
 postgresConfig.TableNamePrefix <- "km_"
 
 let storageConfig = AzureBlobsConfig()
-storageConfig.ConnectionString <- builder.Configuration.["ConnectionStrings:kernelmemory"]
+storageConfig.ConnectionString <- builder.Configuration.[$"ConnectionStrings:{ServiceConstants.BlobServiceName}"]
 storageConfig.Container <- "kernelmemory"
 storageConfig.Auth <- AzureBlobsConfig.AuthTypes.ConnectionString
+
+let queueConfig = AzureQueueConfig()
+queueConfig.ConnectionString <- builder.Configuration.[$"ConnectionStrings:{ServiceConstants.MemoryPipelineQueueServiceName}"]
+queueConfig.Auth <- AzureQueueConfig.AuthTypes.ConnectionString
 
 let memory =
     KernelMemoryBuilder(builder.Services)
         .WithPostgres(postgresConfig)
         .WithAzureBlobsStorage(storageConfig)
-        //.WithSimpleFileStorage("kernel-memory")
         .WithAzureOpenAITextEmbeddingGeneration(embeddingsConfig)
         .WithAzureOpenAITextGeneration(textGenConfig)
+        .WithAzurequeuePipeline(queueConfig)
         .Build()
 
 builder.Services.AddSingleton memory |> ignore

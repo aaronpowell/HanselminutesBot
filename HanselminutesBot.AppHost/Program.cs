@@ -1,7 +1,6 @@
 using HanselminutesBot.ServiceDefaults;
 using Microsoft.Extensions.Hosting;
 using Projects;
-using System.Net.Sockets;
 
 var builder = DistributedApplication.CreateBuilder(args);
 
@@ -14,13 +13,24 @@ IResourceBuilder<AzureStorageResource> storage = builder.AddAzureStorage("hansel
 
 if (builder.Environment.IsDevelopment())
 {
-    storage.UseEmulator();
+    storage.UseEmulator(blobPort: builder.Configuration["Aspire:Azure:Storage:Blobs:Port"] switch
+    {
+        null => null,
+        string port => int.Parse(port)
+    },
+    queuePort: builder.Configuration["Aspire:Azure:Storage:Queues:Port"] switch
+    {
+        null => null,
+        string port => int.Parse(port)
+    })
+    .WithAnnotation(new VolumeMountAnnotation("./data/azurite", "/data", VolumeMountType.Bind));
 }
 
 IResourceBuilder<AzureBlobStorageResource> blob = storage
-    .AddBlobs("kernelmemory");
+    .AddBlobs(ServiceConstants.BlobServiceName);
 
-IResourceBuilder<AzureQueueStorageResource> queue = storage.AddQueues(ServiceConstants.QueueServiceName);
+IResourceBuilder<AzureQueueStorageResource> buildIndexQueue = storage.AddQueues(ServiceConstants.BuildIndexQueueServiceName);
+IResourceBuilder<AzureQueueStorageResource> memoryPipelineQueue = storage.AddQueues(ServiceConstants.MemoryPipelineQueueServiceName);
 
 IResourceBuilder<PostgresContainerResource> postgresContainerDefinition = builder
     .AddPostgresContainer("db", port: builder.Configuration["Aspire:Postgres:Port"] switch
@@ -38,7 +48,7 @@ if (builder.Environment.IsDevelopment())
 {
     postgresContainerDefinition
     // Mount the Postgres data directory into the container so that the database is persisted
-    .WithVolumeMount("./database/persisted", "/var/lib/postgresql/data", VolumeMountType.Bind);
+    .WithVolumeMount("./data/postgres", "/var/lib/postgresql/data", VolumeMountType.Bind);
 }
 
 IResourceBuilder<PostgresDatabaseResource> postgres = postgresContainerDefinition
@@ -50,7 +60,8 @@ IResourceBuilder<ProjectResource> memory = builder.AddProject<HanselminutesBot_M
     .WithEnvironment("OpenAI__ChatDeployment", chatDeployment)
     .WithEnvironment("OpenAI__EmbeddingsDeployment", embeddingsDeployment)
     .WithReference(blob)
-    .WithReference(postgres);
+    .WithReference(postgres)
+    .WithReference(memoryPipelineQueue);
 
 builder.AddProject<HanselminutesBot_Loader>("loader")
     .WithEnvironment("OpenAI__Endpoint", endpoint)
@@ -58,10 +69,10 @@ builder.AddProject<HanselminutesBot_Loader>("loader")
     .WithEnvironment("OpenAI__ChatDeployment", chatDeployment)
     .WithEnvironment("OpenAI__EmbeddingsDeployment", embeddingsDeployment)
     .WithReference(memory)
-    .WithReference(queue);
+    .WithReference(buildIndexQueue);
 
 builder.AddProject<HanselminutesBot_Frontend>("frontend")
     .WithReference(memory)
-    .WithReference(queue);
+    .WithReference(buildIndexQueue);
 
 builder.Build().Run();

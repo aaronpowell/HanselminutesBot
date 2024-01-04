@@ -18,7 +18,7 @@ builder.Services.AddTransient<IKernelMemory>(sp =>
     return new MemoryWebClient("http://memory", httpClient);
 });
 
-builder.AddAzureQueueService(ServiceConstants.QueueServiceName);
+builder.AddAzureQueueService(ServiceConstants.BuildIndexQueueServiceName);
 
 // Add services to the container.
 builder.Services.AddRazorComponents()

@@ -61,7 +61,7 @@
 
     private async Task IndexDocuments()
     {
-        var queueClient = QueueServiceClient.GetQueueClient(ServiceConstants.QueueServiceName);
+        var queueClient = QueueServiceClient.GetQueueClient(ServiceConstants.BuildIndexQueueServiceName);
 
         await queueClient.CreateIfNotExistsAsync();
 

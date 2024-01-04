@@ -7,6 +7,7 @@
 
   <ItemGroup>
     <Compile Include="CommaListJsonParser.fs" />
+    <Compile Include="NullCoalesce.fs" />
     <Compile Include="Worker.fs" />
     <Compile Include="Program.fs" />
   </ItemGroup>

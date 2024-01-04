@@ -36,7 +36,7 @@ builder.Services.AddSingleton<OpenAIClient>(fun (_) ->
 builder.Services.AddHostedService<Worker>() |> ignore
 builder.AddServiceDefaults() |> ignore
 
-builder.AddAzureQueueService ServiceConstants.QueueServiceName
+builder.AddAzureQueueService ServiceConstants.BuildIndexQueueServiceName
 
 let host = builder.Build()
 host.Run()

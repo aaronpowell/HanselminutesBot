@@ -14,6 +14,7 @@ open System.Text.Json.Serialization
 open Microsoft.KernelMemory
 open Azure.Storage.Queues
 open HanselminutesBot.ServiceDefaults
+open System.Text.RegularExpressions
 
 type CompletionPayload =
   { [<JsonConverter(typeof<CommaListJsonParser.CommaListJsonConverter>)>] speakers: string list
@@ -52,12 +53,18 @@ let makeAOAIFunction () =
     fd.Parameters <- BinaryData.FromObjectAsJson(d, jsonOptions)
     fd
 
-let buildMemoryRecord (feed: SyndicationFeed) (client: OpenAIClient) =
+let idGenerator (id: string) (date: DateTimeOffset) =
+    [("F#", "FSharp"); ("C#", "CSharp"); (".NET", "dotnet")]
+    |> Seq.fold (fun (acc: string) (from, to') -> acc.Replace(from, to')) id
+    |> fun s -> Regex.Replace(s, "[^A-Za-z0-9-_]", "_")
+    |> fun s -> $"""{date.ToString("yyyy-MM-dd")}_{s}"""
+    |> fun s -> s.ToLowerInvariant()
+
+let buildMemoryRecord (feed: SyndicationFeed) (client: OpenAIClient) (logger: ILogger) =
     let fd = makeAOAIFunction()
 
     let payloads =
         feed.Items
-        |> Seq.take 10 // just to speed up local dev, don't need all 900+ episodes yet
         |> Seq.map(fun item ->
             let description = item.Summary.Text
             let opts = ChatCompletionsOptions("gpt-35-turbo", [ChatRequestUserMessage description])
@@ -76,15 +83,19 @@ let buildMemoryRecord (feed: SyndicationFeed) (client: OpenAIClient) =
               Speakers = []
               Summary = item.Summary.Text
               Uri = item.Links.[1].Uri
-              Id = item.Id
+              Id = idGenerator item.Title.Text item.PublishDate
               Topics = [] }
 
         try
             let parsed = JsonSerializer.Deserialize<CompletionPayload> content
 
-            { mr with Speakers = parsed.speakers; Summary = parsed.summary; Topics = parsed.topics }
+            logger.LogInformation("Parsed function definition for {0}. {1}", item.Title.Text, parsed)
+
+            { mr with Speakers = parsed.speakers |?? []; Summary = parsed.summary; Topics = parsed.topics |?? [] }
         with
-        | _ -> mr)
+        | _ ->
+            logger.LogWarning("Failed to parse function definition for {0}", item.Title.Text)
+            mr)
 
 let importMemoryRecord (memoryClient: IKernelMemory) (logger: ILogger) cancellationToken (mr: MemoryRecord) =
     let tags = TagCollection()
@@ -93,8 +104,12 @@ let importMemoryRecord (memoryClient: IKernelMemory) (logger: ILogger) cancellat
     mr.Speakers |> Seq.iter(fun speaker -> tags.Add("speaker", speaker))
     mr.Topics |> Seq.iter(fun topic -> tags.Add("topic", topic))
     tags.Add("uri", mr.Uri.ToString())
-    sprintf "Importing %s" mr.Title |> logger.LogInformation
-    memoryClient.ImportTextAsync(mr.Summary, mr.Id, tags, null, Seq.empty, cancellationToken)
+    logger.LogInformation ("Importing {0}", mr.Id)
+    try
+        memoryClient.ImportTextAsync(mr.Summary, mr.Id, tags, null, Seq.empty, cancellationToken)
+    with ex ->
+        logger.LogError(ex, "Failed to import {0}", mr.Id)
+        task { return mr.Id }
 
 type Worker(
     logger: ILogger<Worker>,
@@ -105,7 +120,7 @@ type Worker(
 
     override __.ExecuteAsync(cancellationToken) =
         task {
-            let queueClient = queueServiceClient.GetQueueClient ServiceConstants.QueueServiceName
+            let queueClient = queueServiceClient.GetQueueClient ServiceConstants.BuildIndexQueueServiceName
 
             let! _ = queueClient.CreateIfNotExistsAsync(dict [], cancellationToken)
 
@@ -116,20 +131,29 @@ type Worker(
 
                 let! _ =
                     messages.Value
-                    |> Seq.map(fun _ ->
+                    |> Seq.map(fun m ->
                         task {
                             let file = File.OpenRead(Path.Join(Directory.GetCurrentDirectory(), "Data", "hanselminutes.rss"))
                             let feed = SyndicationFeed.Load(XmlReader.Create file)
 
-                            let memoryRecords = buildMemoryRecord feed client
+                            let memoryRecords = buildMemoryRecord feed client logger
 
                             let importTasks = memoryRecords |> Seq.map importer'
 
-                            let! _ = Task.WhenAll importTasks
+                            for t in importTasks do
+                                try
+                                    let! id = t
+                                    logger.LogInformation("Import requested for {0}", id)
+                                with ex ->
+                                    logger.LogError(ex, "Failed to import memory record {0}", id)
 
-                            sprintf "Imported %d records" (Seq.length memoryRecords) |> logger.LogInformation
+                            let! _ = queueClient.DeleteMessageAsync(m.MessageId, m.PopReceipt, cancellationToken)
+                            logger.LogInformation ("Imported {0} records", Seq.length memoryRecords)
                         })
                     |> Task.WhenAll
 
                 logger.LogInformation "Waiting for next load request"
+
+                // Sleep for a bit so we don't hammer the queue
+                do! Task.Delay(TimeSpan.FromMinutes 1.0, cancellationToken)
         }

@@ -3,4 +3,5 @@ obj
 .vs
 appsettings.*.json
 *.user
-/HanselminutesBot.AppHost/database/persisted
+/HanselminutesBot.AppHost/data/postgres
+/HanselminutesBot.AppHost/data/azurite

@@ -22,7 +22,7 @@ Wanting to learn something today? Let's find a Hanselminutes podcast episode tha
         <ul>
             @foreach (var episode in answer.RelevantSources)
             {
-                <li><a href="@episode.Partitions.First(p => p.Tags.ContainsKey("uri")).Tags["uri"]">Episode link.</a></li>
+                <li><a href="@episode.Partitions.First(p => p.Tags.ContainsKey("uri")).Tags["uri"].First()">@episode.Partitions.First(p => p.Tags.ContainsKey("title")).Tags["title"].First()</a></li>
             }
         </ul>
     </div>
