@@ -10,8 +10,9 @@
 
   <ItemGroup>
     <PackageReference Include="Microsoft.KernelMemory.Core" />
-    <PackageReference Include="Microsoft.KernelMemory.Postgres" />
+    <PackageReference Include="Microsoft.KernelMemory.MemoryDb.Postgres" />
     <PackageReference Include="FSharp.Core" />
+    <PackageReference Include="Microsoft.KernelMemory.Orchestration.AzureQueues" />
   </ItemGroup>
 
   <ItemGroup>

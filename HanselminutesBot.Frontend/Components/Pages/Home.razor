@@ -8,30 +8,97 @@
 
 Wanting to learn something today? Let's find a Hanselminutes podcast episode that can help you out.
 
-<div>
-    <p>What would you like to learn about?</p>
-    <div><textarea @bind="UserInput"></textarea></div>
-    <div><button @onclick="DoAsk">Find episodes</button></div>
-</div>
-
-@if (answer is not null)
-{
-    <div>
-        <h2>Answer</h2>
-        <p>@answer.Result</p>
-        <ul>
-            @foreach (var episode in answer.RelevantSources)
+<MudStack>
+    <MudCard>
+        <MudCardContent>
+            <MudTextField T="string" Label="What would you like to learn about?" @bind-Value="UserInput" Variant="Variant.Text" Lines="5" Disabled="loading" />
+            @if (selectedSpeakers.Length > 0 || selectedTopics.Length > 0)
             {
-                <li><a href="@episode.Partitions.First(p => p.Tags.ContainsKey("uri")).Tags["uri"].First()">@episode.Partitions.First(p => p.Tags.ContainsKey("title")).Tags["title"].First()</a></li>
+                <MudText Typo="Typo.h3">Selected Filters</MudText>
+                <MudChipSet>
+                    @foreach (var speaker in selectedSpeakers)
+                    {
+                        <MudChip Color="Color.Primary" Icon="@Icons.Material.Filled.Person" Text="@speaker.Text">@speaker.ChildContent</MudChip>
+                    }
+                </MudChipSet>
+                <MudChipSet>
+                    @foreach (var topic in selectedTopics)
+                    {
+                        <MudChip Color="Color.Secondary" Icon="@Icons.Material.Filled.Lightbulb" Text="@topic.Text">@topic.ChildContent</MudChip>
+                    }
+                </MudChipSet>
             }
-        </ul>
-    </div>
-}
+        </MudCardContent>
+        <MudCardActions>
+            <MudStack>
+                <MudButton OnClick="DoAsk" ButtonType="ButtonType.Button" Variant="Variant.Filled" Color="Color.Primary" Disabled="loading">Find episodes</MudButton>
+                @if (loading)
+                {
+                    <MudProgressLinear Color="Color.Info" Indeterminate="true" Class="my-7" />
+                }
+            </MudStack>
+        </MudCardActions>
+    </MudCard>
 
+    @if (answer is not null && sources is not null)
+    {
+        <MudCard>
+            <MudCardContent>
+                <MudText Typo="Typo.h2">Answer</MudText>
+                <MudText Typo="Typo.body1">@answer</MudText>
+                <MudText Typo="Typo.h3">Relevant Episodes</MudText>
+                <MudList>
+                    @foreach (var episode in sources)
+                    {
+                        <MudListItem>
+                            <MudCard>
+                                <MudCardContent>
+                                    <MudLink Href="@episode.Uri" Target="_blank">@episode.Title</MudLink>
+                                    <br />
+                                    <MudText Typo="Typo.caption">
+                                        Speakers:
+                                        <MudChipSet @bind-SelectedChips="selectedSpeakers" MultiSelection="true" Filter="true">
+                                            @foreach (string? speaker in episode.Speakers)
+                                            {
+                                                if (speaker is not null)
+                                                {
+                                                    <MudChip Color="Color.Primary" Icon="@Icons.Material.Filled.Person" Text="@speaker">@speaker</MudChip>
+                                                }
+                                            }
+                                        </MudChipSet>
+                                    </MudText>
+                                    <br />
+                                    <MudText Typo="Typo.caption">
+                                        Topics:
+                                        <MudChipSet @bind-SelectedChips="selectedTopics" MultiSelection="true" Filter="true">
+                                            @foreach (string? topic in episode.Topics)
+                                            {
+                                                if (topic is not null)
+                                                {
+                                                    <MudChip Color="Color.Secondary" Icon="@Icons.Material.Filled.Lightbulb" Text="@topic">@topic</MudChip>
+                                                }
+                                            }
+                                        </MudChipSet>
+                                    </MudText>
+                                </MudCardContent>
+                            </MudCard>
+                        </MudListItem>
+                    }
+                </MudList>
+            </MudCardContent>
+        </MudCard>
+    }
+</MudStack>
 @code {
     private string UserInput = "";
 
-    private MemoryAnswer? answer = null;
+    private string? answer = null;
+    private IEnumerable<Source>? sources = null;
+
+    private MudChip[] selectedSpeakers = [];
+    private MudChip[] selectedTopics = [];
+
+    private bool loading = false;
 
     private async Task DoAsk()
     {
@@ -40,8 +107,35 @@ Wanting to learn something today? Let's find a Hanselminutes podcast episode tha
             return;
         }
 
-        var response = await Memory.AskAsync(UserInput, minRelevance: 0.8);
+        answer = null;
+        sources = null;
+        loading = true;
 
-        answer = response;
+        MemoryFilter filter = new();
+
+        foreach (var speaker in selectedSpeakers)
+        {
+            filter.Add("speaker", speaker.Text);
+        }
+
+        foreach (var topic in selectedTopics)
+        {
+            filter.Add("topic", topic.Text);
+        }
+
+        var response = await Memory.AskAsync(UserInput, filter: filter, minRelevance: 0.8);
+
+        answer = response.Result;
+
+        sources = response.RelevantSources.Select(s =>
+        {
+            List<Citation.Partition> partitions = s.Partitions;
+            var title = partitions.First(p => p.Tags.ContainsKey("title")).Tags["title"].First();
+            var uri = partitions.First(p => p.Tags.ContainsKey("uri")).Tags["uri"].First();
+            return new Source(title!, uri!, partitions.Where(p => p.Tags.ContainsKey("speaker")).SelectMany(p => p.Tags["speaker"]), partitions.Where(p => p.Tags.ContainsKey("topic")).SelectMany(p => p.Tags["topic"]));
+        });
+        loading = false;
     }
+
+    record Source(string Title, string Uri, IEnumerable<string?> Speakers, IEnumerable<string?> Topics);
 }

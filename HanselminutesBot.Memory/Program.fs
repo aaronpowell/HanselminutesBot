@@ -2,16 +2,14 @@ open System
 open System.Threading
 open System.Threading.Tasks
 open Microsoft.AspNetCore.Builder
+open Microsoft.AspNetCore.Http
 open Microsoft.Extensions.DependencyInjection
 open Microsoft.Extensions.Hosting
+open Microsoft.Extensions.Logging
 open Microsoft.KernelMemory
 open Microsoft.KernelMemory.Postgres
-open Microsoft.AspNetCore.Http
-open Microsoft.Extensions.Logging
 open Microsoft.KernelMemory.WebService
-open Microsoft.KernelMemory.ContentStorage.AzureBlobs
 open HanselminutesBot.ServiceDefaults
-open Microsoft.KernelMemory.Pipeline.Queue.AzureQueues
 
 let builder = WebApplication.CreateBuilder()
 
@@ -40,17 +38,17 @@ storageConfig.ConnectionString <- builder.Configuration.[$"ConnectionStrings:{Se
 storageConfig.Container <- "kernelmemory"
 storageConfig.Auth <- AzureBlobsConfig.AuthTypes.ConnectionString
 
-let queueConfig = AzureQueueConfig()
+let queueConfig = AzureQueuesConfig()
 queueConfig.ConnectionString <- builder.Configuration.[$"ConnectionStrings:{ServiceConstants.MemoryPipelineQueueServiceName}"]
-queueConfig.Auth <- AzureQueueConfig.AuthTypes.ConnectionString
+queueConfig.Auth <- AzureQueuesConfig.AuthTypes.ConnectionString
 
 let memory =
     KernelMemoryBuilder(builder.Services)
-        .WithPostgres(postgresConfig)
+        .WithPostgresMemoryDb(postgresConfig)
         .WithAzureBlobsStorage(storageConfig)
         .WithAzureOpenAITextEmbeddingGeneration(embeddingsConfig)
         .WithAzureOpenAITextGeneration(textGenConfig)
-        .WithAzurequeuePipeline(queueConfig)
+        .WithAzureQueuesOrchestration(queueConfig)
         .Build()
 
 builder.Services.AddSingleton memory |> ignore

@@ -1,6 +1,7 @@
 using HanselminutesBot.Frontend.Components;
 using HanselminutesBot.ServiceDefaults;
 using Microsoft.KernelMemory;
+using MudBlazor.Services;
 
 WebApplicationBuilder builder = WebApplication.CreateBuilder(args);
 
@@ -23,6 +24,8 @@ builder.AddAzureQueueService(ServiceConstants.BuildIndexQueueServiceName);
 // Add services to the container.
 builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();
+
+builder.Services.AddMudServices();
 
 WebApplication app = builder.Build();
 

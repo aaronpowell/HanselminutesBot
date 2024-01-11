@@ -42,7 +42,9 @@ IResourceBuilder<PostgresContainerResource> postgresContainerDefinition = builde
     // Use a custom container image that has pgvector installed
     .WithAnnotation(new ContainerImageAnnotation { Image = "ankane/pgvector", Tag = "latest" })
     // Mount the database scripts into the container that will configure pgvector
-    .WithVolumeMount("./database", "/docker-entrypoint-initdb.d", VolumeMountType.Bind);
+    .WithVolumeMount("./database", "/docker-entrypoint-initdb.d", VolumeMountType.Bind)
+    // Enable logging of all SQL statements
+    .WithArgs("-c", "log_statement=all");
 
 if (builder.Environment.IsDevelopment())
 {
