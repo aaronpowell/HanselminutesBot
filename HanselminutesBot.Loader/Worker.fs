@@ -101,7 +101,11 @@ let importMemoryRecord (memoryClient: IKernelMemory) (logger: ILogger) cancellat
     let tags = TagCollection()
     tags.Add("title", mr.Title)
     tags.Add("date", mr.Date.ToString("yyyy-MM-dd"))
-    mr.Speakers |> Seq.iter(fun speaker -> tags.Add("speaker", speaker))
+    mr.Speakers
+    // Sometimes the model just returns "Scott" as a speaker, which is not very useful
+    // so we filter those out
+    |> Seq.filter(fun speaker -> speaker = "Scott")
+    |> Seq.iter(fun speaker -> tags.Add("speaker", speaker))
     mr.Topics |> Seq.iter(fun topic -> tags.Add("topic", topic))
     tags.Add("uri", mr.Uri.ToString())
     logger.LogInformation ("Importing {0}", mr.Id)
