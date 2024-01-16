@@ -9,6 +9,7 @@
     <PackageVersion Include="Aspire.Npgsql" Version="8.0.0-preview.2.23619.3" />
     <PackageVersion Include="azure.ai.openai" Version="1.0.0-beta.12" />
     <PackageVersion Include="FSharp.Core" Version="8.0.100" />
+    <PackageVersion Include="Microsoft.CognitiveServices.Speech" Version="1.34.0" />
     <PackageVersion Include="Microsoft.Extensions.Configuration.Json" Version="8.0.0" />
     <PackageVersion Include="Microsoft.Extensions.Hosting" Version="8.0.0" />
     <PackageVersion Include="Microsoft.KernelMemory.Core" Version="0.26.240104.1" />

@@ -74,6 +74,10 @@ builder.AddProject<HanselminutesBot_Loader>("loader")
     .WithReference(buildIndexQueue);
 
 builder.AddProject<HanselminutesBot_Frontend>("frontend")
+    .WithEnvironment("Speech__Key", builder.Configuration["Speech:Key"])
+    .WithEnvironment("Speech__Region", builder.Configuration["Speech:Region"])
+    .WithEnvironment("Speech__EndpointId", builder.Configuration["Speech:EndpointId"])
+    .WithEnvironment("Speech__VoiceName", builder.Configuration["Speech:VoiceName"])
     .WithReference(memory)
     .WithReference(buildIndexQueue);
 

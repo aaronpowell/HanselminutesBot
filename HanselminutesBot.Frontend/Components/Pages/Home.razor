@@ -44,7 +44,15 @@ Wanting to learn something today? Let's find a Hanselminutes podcast episode tha
     {
         <MudCard>
             <MudCardContent>
-                <MudText Typo="Typo.h2">Answer</MudText>
+                <MudText Typo="Typo.h2">Answer @if (!string.IsNullOrEmpty(answerSpokenFile)) {
+                    <MudIconButton Icon="@Icons.Material.Filled.VolumeUp" OnClick="@(() => playAudio = !playAudio)" />
+
+                    if (playAudio)
+                    {
+                        <audio autoplay src="@answerSpokenFile" />
+                    }
+                }
+                </MudText>
                 <MudText Typo="Typo.body1">@answer</MudText>
                 <MudText Typo="Typo.h3">Relevant Episodes</MudText>
                 <MudList>
@@ -89,53 +97,3 @@ Wanting to learn something today? Let's find a Hanselminutes podcast episode tha
         </MudCard>
     }
 </MudStack>
-@code {
-    private string UserInput = "";
-
-    private string? answer = null;
-    private IEnumerable<Source>? sources = null;
-
-    private MudChip[] selectedSpeakers = [];
-    private MudChip[] selectedTopics = [];
-
-    private bool loading = false;
-
-    private async Task DoAsk()
-    {
-        if (string.IsNullOrWhiteSpace(UserInput))
-        {
-            return;
-        }
-
-        answer = null;
-        sources = null;
-        loading = true;
-
-        MemoryFilter filter = new();
-
-        foreach (var speaker in selectedSpeakers)
-        {
-            filter.Add("speaker", speaker.Text);
-        }
-
-        foreach (var topic in selectedTopics)
-        {
-            filter.Add("topic", topic.Text);
-        }
-
-        var response = await Memory.AskAsync(UserInput, filter: filter, minRelevance: 0.8);
-
-        answer = response.Result;
-
-        sources = response.RelevantSources.Select(s =>
-        {
-            List<Citation.Partition> partitions = s.Partitions;
-            var title = partitions.First(p => p.Tags.ContainsKey("title")).Tags["title"].First();
-            var uri = partitions.First(p => p.Tags.ContainsKey("uri")).Tags["uri"].First();
-            return new Source(title!, uri!, partitions.Where(p => p.Tags.ContainsKey("speaker")).SelectMany(p => p.Tags["speaker"]), partitions.Where(p => p.Tags.ContainsKey("topic")).SelectMany(p => p.Tags["topic"]));
-        });
-        loading = false;
-    }
-
-    record Source(string Title, string Uri, IEnumerable<string?> Speakers, IEnumerable<string?> Topics);
-}

@@ -41,6 +41,11 @@ if (!app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 
+app.MapGet("/tts/{filename}.wav", (string filename) =>
+{
+    return Results.Stream(File.OpenRead(Path.Join("tts", filename + ".wav")));
+});
+
 app.UseStaticFiles();
 app.UseAntiforgery();
 
