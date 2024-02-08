@@ -6,3 +6,4 @@ appsettings.*.json
 /HanselminutesBot.AppHost/data/postgres
 /HanselminutesBot.AppHost/data/azurite
 tts
+.azure
