@@ -1,4 +1,4 @@
-using HanselminutesBot.ServiceDefaults;
+using HanselminutesBot.Shared;
 using Microsoft.Extensions.Hosting;
 using Projects;
 

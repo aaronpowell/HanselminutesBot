@@ -1,70 +1,36 @@
 ﻿@page "/manage"
 @using Azure.Storage.Queues
-@using HanselminutesBot.ServiceDefaults
-@using System.ServiceModel.Syndication
-@using System.Xml
-@inject IKernelMemory Memory
-@inject QueueServiceClient QueueServiceClient
 @rendermode InteractiveServer
 
 <PageTitle>Manage</PageTitle>
 
-<h1>Management</h1>
+<MudStack>
+    <h1>Management</h1>
 
-<div class="row">
-    <div class="col">
-        <h2>Episodes</h2>
-        @if (!Episodes.Any())
-        {
-            <p>There are no loaded episodes.</p>
-        }
-        else
-        {
-            <table class="table">
-                <thead>
-                    <tr>
-                        <th>Title</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @foreach (var index in Episodes)
-                    {
-                        <tr>
-                            <td>@index.Title</td>
-                        </tr>
-                    }
-                </tbody>
-            </table>
-        }
-    </div>
+    <MudTable Items="@Episodes" Striped="true" MultiSelection="true" @bind-SelectedItems="ItemsToIndex">
+        <ToolBarContent>
+            <MudText Typo="Typo.h2">Podcast Episodes</MudText>
+            <MudSpacer />
+            <MudStack Row="true">
+                <MudButton Variant="Variant.Filled"
+                           Color="Color.Primary"
+                           OnClick="RetrieveStatuses"
+                           StartIcon="@(FetchingStatuses ? Icons.Material.Outlined.Downloading : Icons.Material.Outlined.FileDownloadOff)"
+                           Disabled="@FetchingStatuses">Retrieve Statuses</MudButton>
+                <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="IndexDocuments" Disabled="@(ItemsToIndex.Count == 0)">Index Selected Items</MudButton>
+            </MudStack>
+        </ToolBarContent>
+        <HeaderContent>
+            <MudTh>Episode Title</MudTh>
+            <MudTh>Indexing Status</MudTh>
+        </HeaderContent>
+        <RowTemplate>
+            <MudTd>@context.Title</MudTd>
+            <MudTd>@(context.Status is null ? "Unknown" : context.Status.Completed ? "Completed" : context.Status.Failed ? "Failed" : $"{context.Status.RemainingSteps.Count} steps left")</MudTd>
+        </RowTemplate>
+        <PagerContent>
+            <MudTablePager />
+        </PagerContent>
+    </MudTable>
 
-    <div class="col">
-        <button @onclick="IndexDocuments">Trigger rebuild</button>
-    </div>
-</div>
-
-@code {
-    record PodcastItem(string Title, string Id);
-
-    private List<PodcastItem> Episodes = [];
-
-    protected override async Task OnInitializedAsync()
-    {
-        using var file = File.OpenRead("../HanselminutesBot.Loader/Data/hanselminutes.rss");
-        var feed = SyndicationFeed.Load(XmlReader.Create(file));
-
-        foreach (var item in feed.Items)
-        {
-            Episodes.Add(new PodcastItem(item.Title.Text, item.Id));
-        }
-    }
-
-    private async Task IndexDocuments()
-    {
-        var queueClient = QueueServiceClient.GetQueueClient(ServiceConstants.BuildIndexQueueServiceName);
-
-        await queueClient.CreateIfNotExistsAsync();
-
-        await queueClient.SendMessageAsync("begin");
-    }
-}
+</MudStack>

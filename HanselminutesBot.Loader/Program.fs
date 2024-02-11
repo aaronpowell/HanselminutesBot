@@ -5,7 +5,7 @@ open System
 open System.Net.Http
 open Azure.AI.OpenAI
 open Azure
-open HanselminutesBot.ServiceDefaults
+open HanselminutesBot.Shared
 
 let builder = Host.CreateApplicationBuilder()
 

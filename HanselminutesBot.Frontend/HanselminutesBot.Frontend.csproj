@@ -8,6 +8,7 @@
 
     <ItemGroup>
         <ProjectReference Include="..\HanselminutesBot.ServiceDefaults\HanselminutesBot.ServiceDefaults.csproj" />
+        <ProjectReference Include="..\HanselminutesBot.Shared\HanselminutesBot.Shared.fsproj" />
     </ItemGroup>
 
     <ItemGroup>
@@ -16,6 +17,7 @@
         <PackageReference Include="Aspire.Azure.Storage.Queues" />
         <PackageReference Include="MudBlazor" />
         <PackageReference Include="System.ServiceModel.Syndication" />
+        <PackageReference Include="FSharp.Core" />
     </ItemGroup>
 
 </Project>

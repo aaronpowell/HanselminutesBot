@@ -17,6 +17,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\HanselminutesBot.ServiceDefaults\HanselminutesBot.ServiceDefaults.csproj" />
+    <ProjectReference Include="..\HanselminutesBot.Shared\HanselminutesBot.Shared.fsproj" />
   </ItemGroup>
 
 </Project>

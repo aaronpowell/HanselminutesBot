@@ -9,7 +9,7 @@ open Microsoft.Extensions.Logging
 open Microsoft.KernelMemory
 open Microsoft.KernelMemory.Postgres
 open Microsoft.KernelMemory.WebService
-open HanselminutesBot.ServiceDefaults
+open HanselminutesBot.Shared
 
 let builder = WebApplication.CreateBuilder()
 
@@ -113,7 +113,7 @@ app.MapGet(Constants.HttpUploadStatusEndpoint, DocumentStatusRequest(fun index d
         if String.IsNullOrEmpty documentId then
             return TypedResults.BadRequest "Document ID is required" :> IResult
         else
-            let! status = memory.GetDocumentStatusAsync(index', documentId, ct)
+            let! status = memory.GetDocumentStatusAsync(documentId, index', ct)
 
             return match status with
                    | null -> TypedResults.NotFound "Document not found" :> IResult

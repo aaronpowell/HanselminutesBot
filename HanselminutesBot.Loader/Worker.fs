@@ -5,16 +5,14 @@ open System
 open System.Threading.Tasks
 open Microsoft.Extensions.Logging
 open Microsoft.Extensions.Hosting
-open System.IO
 open System.ServiceModel.Syndication
-open System.Xml
 open Azure.AI.OpenAI
 open System.Text.Json
 open System.Text.Json.Serialization
 open Microsoft.KernelMemory
 open Azure.Storage.Queues
-open HanselminutesBot.ServiceDefaults
-open System.Text.RegularExpressions
+open HanselminutesBot.Shared
+open Azure
 
 type CompletionPayload =
   { [<JsonConverter(typeof<CommaListJsonParser.CommaListJsonConverter>)>] speakers: string list
@@ -29,6 +27,25 @@ type MemoryRecord =
     Uri: Uri
     Id: string
     Topics: string list }
+
+let systemMessage = """
+You are an assistant that will extract information from Podcast episode descriptions.
+The key bits of information you will extract is a summary, the speakers, and the topics.
+The host of the Podcast is Scott Hanselman, and should be ignored from the speaker list.
+
+## Example
+Description: "Quincy Larson, the teacher who founded freeCodeCamp.org, shares his inspiring journey of creating one of the most beloved learn-to-code resources. In this episode, he discusses why he launched freeCodeCamp, the importance of making coding accessible to all, and how it will forever remain free. Quincy also dives into the exciting new C# Certification program in partnership with Microsoft and freeCodeCamp, empowering learners to master this powerful language and build their tech careers."
+Speakers: "Quincy Larson"
+Topics: "freeCodeCamp, C#, Microsoft, certification, coding, tech careers"
+
+Description: "In this episode of Hanselminutes, Scott Hanselman talks to Jose Tejada (JOTEGO), a passionate retro gaming enthusiast and FPGA developer. Jose shares his journey of creating FPGA cores for classic arcade games such as Pac-Man, Galaga, and Out Run, and how he distributes them through the MiSTer and Analogue Pocket platforms. Jose also explains the benefits and challenges of FPGA development, and why he thinks FPGA is the future of retro gaming preservation and emulation."
+Speakers: "Jose Tejada"
+Topics: "retro gaming"
+
+Description: "Open Telemetry plays a pivotal role in monitoring, tracing, and understanding complex distributed systems. From practical applications to real-world examples, Scott and Dr. Sally break down the how and why of Open Telemetry, offering a perspective to harnessing its power for perf and troubleshooting."
+Speakers: "Dr. Sally"
+Topics: "Open Telemetry, monitoring, tracing, distributed systems, perf, troubleshooting"
+"""
 
 let makeAOAIFunction () =
     let jsonOptions = JsonSerializerOptions()
@@ -53,49 +70,33 @@ let makeAOAIFunction () =
     fd.Parameters <- BinaryData.FromObjectAsJson(d, jsonOptions)
     fd
 
-let idGenerator (id: string) (date: DateTimeOffset) =
-    [("F#", "FSharp"); ("C#", "CSharp"); (".NET", "dotnet")]
-    |> Seq.fold (fun (acc: string) (from, to') -> acc.Replace(from, to')) id
-    |> fun s -> Regex.Replace(s, "[^A-Za-z0-9-_]", "_")
-    |> fun s -> $"""{date.ToString("yyyy-MM-dd")}_{s}"""
-    |> fun s -> s.ToLowerInvariant()
+let processItem (fd: FunctionDefinition) (client: OpenAIClient) (item: SyndicationItem) =
+    let description = item.Summary.Text
+    let opts = ChatCompletionsOptions("gpt-35-turbo", [ChatRequestSystemMessage systemMessage; ChatRequestUserMessage description])
+    opts.Functions.Add(fd)
+    opts.FunctionCall <- fd
+    client.GetChatCompletionsAsync opts
 
-let buildMemoryRecord (feed: SyndicationFeed) (client: OpenAIClient) (logger: ILogger) =
-    let fd = makeAOAIFunction()
+let unpackResponse (item: SyndicationItem) (result: Response<ChatCompletions>) id =
+    let response = result.Value
+    let content = response.Choices.[0].Message.FunctionCall.Arguments
 
-    let payloads =
-        feed.Items
-        |> Seq.map(fun item ->
-            let description = item.Summary.Text
-            let opts = ChatCompletionsOptions("gpt-35-turbo", [ChatRequestUserMessage description])
-            opts.Functions.Add(fd)
-            opts.FunctionCall <- fd
-            (item, client.GetChatCompletions opts))
+    let mr =
+        { Title = item.Title.Text
+          Date = item.PublishDate
+          Speakers = []
+          Summary = item.Summary.Text
+          Uri = item.Links.[1].Uri
+          Id = id
+          Topics = [] }
 
-    payloads
-    |> Seq.map(fun (item, result) ->
-        let response = result.Value
-        let content = response.Choices.[0].Message.FunctionCall.Arguments
+    try
+        let parsed = JsonSerializer.Deserialize<CompletionPayload> content
 
-        let mr =
-            { Title = item.Title.Text
-              Date = item.PublishDate
-              Speakers = []
-              Summary = item.Summary.Text
-              Uri = item.Links.[1].Uri
-              Id = idGenerator item.Title.Text item.PublishDate
-              Topics = [] }
-
-        try
-            let parsed = JsonSerializer.Deserialize<CompletionPayload> content
-
-            logger.LogInformation("Parsed function definition for {0}. {1}", item.Title.Text, parsed)
-
-            { mr with Speakers = parsed.speakers |?? []; Summary = parsed.summary; Topics = parsed.topics |?? [] }
-        with
-        | _ ->
-            logger.LogWarning("Failed to parse function definition for {0}", item.Title.Text)
-            mr)
+        { mr with Speakers = parsed.speakers |?? []; Summary = parsed.summary; Topics = parsed.topics |?? [] }
+    with
+    | _ ->
+        mr
 
 let importMemoryRecord (memoryClient: IKernelMemory) (logger: ILogger) cancellationToken (mr: MemoryRecord) =
     let tags = TagCollection()
@@ -104,7 +105,7 @@ let importMemoryRecord (memoryClient: IKernelMemory) (logger: ILogger) cancellat
     mr.Speakers
     // Sometimes the model just returns "Scott" as a speaker, which is not very useful
     // so we filter those out
-    |> Seq.filter(fun speaker -> speaker = "Scott")
+    |> Seq.filter(fun speaker -> speaker <> "Scott")
     |> Seq.iter(fun speaker -> tags.Add("speaker", speaker))
     mr.Topics |> Seq.iter(fun topic -> tags.Add("topic", topic))
     tags.Add("uri", mr.Uri.ToString())
@@ -123,6 +124,7 @@ type Worker(
     inherit BackgroundService()
 
     override __.ExecuteAsync(cancellationToken) =
+        let feed = PodcastSource.GetFeed()
         task {
             let queueClient = queueServiceClient.GetQueueClient ServiceConstants.BuildIndexQueueServiceName
 
@@ -132,27 +134,43 @@ type Worker(
                 let! messages = queueClient.ReceiveMessagesAsync(32, TimeSpan.FromSeconds 30.0, cancellationToken)
 
                 let importer' = importMemoryRecord memoryClient logger cancellationToken
+                let processItem' = processItem (makeAOAIFunction()) client
 
                 let! _ =
                     messages.Value
                     |> Seq.map(fun m ->
                         task {
-                            let file = File.OpenRead(Path.Join(Directory.GetCurrentDirectory(), "Data", "hanselminutes.rss"))
-                            let feed = SyndicationFeed.Load(XmlReader.Create file)
+                            let item = feed.Items |> Seq.find(fun i -> i.Id = m.MessageText)
+                            let id = SyndicationItemTools.GenerateId item.Title.Text item.PublishDate
+                            let! status = memoryClient.GetDocumentStatusAsync id
 
-                            let memoryRecords = buildMemoryRecord feed client logger
+                            match status with
+                            | s when isNull s ->
+                                let! completion = processItem' item
+                                let memoryRecord = unpackResponse item completion id
 
-                            let importTasks = memoryRecords |> Seq.map importer'
-
-                            for t in importTasks do
                                 try
-                                    let! id = t
-                                    logger.LogInformation("Import requested for {0}", id)
+                                    let! docId = importer' memoryRecord
+                                    let! _ = queueClient.DeleteMessageAsync(m.MessageId, m.PopReceipt, cancellationToken)
+                                    logger.LogInformation("Import requested for {0}", docId)
                                 with ex ->
-                                    logger.LogError(ex, "Failed to import memory record {0}", id)
+                                    logger.LogError(ex, "Failed to import memory record {0}", m.MessageText)
+                            | s when s.Completed ->
+                                logger.LogInformation ("Document {0} already imported", id)
+                            | s when s.RemainingSteps.Count > 0 ->
+                                logger.LogInformation ("Document {0} already in progress, {1} steps left", id, s.RemainingSteps.Count)
+                            | s when s.Failed ->
+                                logger.LogInformation ("Document {0} failed to import, ignoring", id)
+                            | _ ->
+                                let! completion = processItem' item
+                                let memoryRecord = unpackResponse item completion id
 
-                            let! _ = queueClient.DeleteMessageAsync(m.MessageId, m.PopReceipt, cancellationToken)
-                            logger.LogInformation ("Imported {0} records", Seq.length memoryRecords)
+                                try
+                                    let! docId = importer' memoryRecord
+                                    let! _ = queueClient.DeleteMessageAsync(m.MessageId, m.PopReceipt, cancellationToken)
+                                    logger.LogInformation("Import requested for {0}", docId)
+                                with ex ->
+                                    logger.LogError(ex, "Failed to import memory record {0}", m.MessageText)
                         })
                     |> Task.WhenAll
 

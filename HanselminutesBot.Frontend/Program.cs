@@ -1,5 +1,5 @@
 using HanselminutesBot.Frontend.Components;
-using HanselminutesBot.ServiceDefaults;
+using HanselminutesBot.Shared;
 using Microsoft.KernelMemory;
 using MudBlazor.Services;
 
