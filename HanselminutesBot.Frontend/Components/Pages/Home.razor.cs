@@ -61,12 +61,16 @@ public partial class Home
             string title = partitions.First(p => p.Tags.ContainsKey("title")).Tags["title"].First() ?? "";
             string uri = partitions.First(p => p.Tags.ContainsKey("uri")).Tags["uri"].First() ?? "";
             string desc = s.Partitions.First().Text;
+            DateTime date = DateTime.Parse(partitions.First(p => p.Tags.ContainsKey("date")).Tags["date"].First()!);
+            float relevance = s.Partitions.First().Relevance;
             return new Source(
                 title,
                 uri,
                 partitions.Where(p => p.Tags.ContainsKey("speaker")).SelectMany(p => p.Tags["speaker"]),
                 partitions.Where(p => p.Tags.ContainsKey("topic")).SelectMany(p => p.Tags["topic"]),
-                desc);
+                desc,
+                date,
+                relevance);
         });
         loading = false;
 

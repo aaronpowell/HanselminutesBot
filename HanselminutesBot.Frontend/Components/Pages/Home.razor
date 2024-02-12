@@ -57,14 +57,19 @@ Wanting to learn something today? Let's find a Hanselminutes podcast episode tha
                 </MudText>
                 <MudText Typo="Typo.body1">@answer</MudText>
                 <MudText Typo="Typo.h3">Relevant Episodes</MudText>
-                <MudList>
+                <MudStack>
                     @foreach (var episode in sources)
                     {
-                        <MudListItem>
-                            <MudCard>
-                                <MudCardContent>
-                                    <MudStack>
-                                        <MudLink Href="@episode.Uri" Target="_blank">@episode.Title</MudLink>
+                        <MudCard>
+                            <MudCardContent>
+                                <MudStack>
+                                    <MudText Typo="Typo.subtitle1">
+                                        <MudLink Href="@episode.Uri" Target="_blank">@episode.Title</MudLink> (@episode.Date.ToLongDateString())
+                                    </MudText>
+                                    <MudText Typo="Typo.subtitle2">
+                                        Relevance: @episode.Relevance
+                                    </MudText>
+                                    <MudStack Row="true">
                                         <MudText Typo="Typo.caption">
                                             Speakers:
                                             <MudChipSet @bind-SelectedChips="selectedSpeakers" MultiSelection="true" Filter="true">
@@ -77,7 +82,6 @@ Wanting to learn something today? Let's find a Hanselminutes podcast episode tha
                                                 }
                                             </MudChipSet>
                                         </MudText>
-                                        <br />
                                         <MudText Typo="Typo.caption">
                                             Topics:
                                             <MudChipSet @bind-SelectedChips="selectedTopics" MultiSelection="true" Filter="true">
@@ -90,17 +94,17 @@ Wanting to learn something today? Let's find a Hanselminutes podcast episode tha
                                                 }
                                             </MudChipSet>
                                         </MudText>
-                                        <MudExpansionPanels>
-                                            <MudExpansionPanel Text="Description">
-                                                @episode.Description
-                                            </MudExpansionPanel>
-                                        </MudExpansionPanels>
                                     </MudStack>
-                                </MudCardContent>
-                            </MudCard>
-                        </MudListItem>
+                                    <MudExpansionPanels>
+                                        <MudExpansionPanel Text="Episode Summary">
+                                            @episode.Description
+                                        </MudExpansionPanel>
+                                    </MudExpansionPanels>
+                                </MudStack>
+                            </MudCardContent>
+                        </MudCard>
                     }
-                </MudList>
+                </MudStack>
             </MudCardContent>
         </MudCard>
     }
