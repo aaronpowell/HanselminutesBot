@@ -1,3 +1,4 @@
+using HanselminutesBot.Frontend.Models;
 using Microsoft.AspNetCore.Components;
 using Microsoft.CognitiveServices.Speech;
 using Microsoft.CognitiveServices.Speech.Audio;
@@ -57,9 +58,19 @@ public partial class Home
         sources = response.RelevantSources.Select(s =>
         {
             List<Citation.Partition> partitions = s.Partitions;
-            var title = partitions.First(p => p.Tags.ContainsKey("title")).Tags["title"].First();
-            var uri = partitions.First(p => p.Tags.ContainsKey("uri")).Tags["uri"].First();
-            return new Source(title!, uri!, partitions.Where(p => p.Tags.ContainsKey("speaker")).SelectMany(p => p.Tags["speaker"]), partitions.Where(p => p.Tags.ContainsKey("topic")).SelectMany(p => p.Tags["topic"]));
+            string title = partitions.First(p => p.Tags.ContainsKey("title")).Tags["title"].First() ?? "";
+            string uri = partitions.First(p => p.Tags.ContainsKey("uri")).Tags["uri"].First() ?? "";
+            string desc = s.Partitions.First().Text;
+            DateTime date = DateTime.Parse(partitions.First(p => p.Tags.ContainsKey("date")).Tags["date"].First()!);
+            float relevance = s.Partitions.First().Relevance;
+            return new Source(
+                title,
+                uri,
+                partitions.Where(p => p.Tags.ContainsKey("speaker")).SelectMany(p => p.Tags["speaker"]),
+                partitions.Where(p => p.Tags.ContainsKey("topic")).SelectMany(p => p.Tags["topic"]),
+                desc,
+                date,
+                relevance);
         });
         loading = false;
 
@@ -82,7 +93,14 @@ public partial class Home
         config.SpeechSynthesisVoiceName = Configuration["Speech:VoiceName"] ?? throw new ArgumentException("Speech:VoiceName is not set.");
         config.SetSpeechSynthesisOutputFormat(SpeechSynthesisOutputFormat.Audio24Khz160KBitRateMonoMp3);
 
-        string fileName = Path.Join("tts", Guid.NewGuid().ToString() + ".wav");
+        string path = "tts";
+
+        if (!Directory.Exists(path))
+        {
+            Directory.CreateDirectory(path);
+        }
+
+        string fileName = Path.Join(path, Guid.NewGuid().ToString() + ".wav");
 
         // using the default speaker as audio output.
         using var fileOutput = AudioConfig.FromWavFileOutput(fileName);
@@ -107,5 +125,4 @@ public partial class Home
         }
     }
 
-    private record Source(string Title, string Uri, IEnumerable<string?> Speakers, IEnumerable<string?> Topics);
 }

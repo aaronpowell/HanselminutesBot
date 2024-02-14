@@ -44,55 +44,67 @@ Wanting to learn something today? Let's find a Hanselminutes podcast episode tha
     {
         <MudCard>
             <MudCardContent>
-                <MudText Typo="Typo.h2">Answer @if (!string.IsNullOrEmpty(answerSpokenFile)) {
-                    <MudIconButton Icon="@Icons.Material.Filled.VolumeUp" OnClick="@(() => playAudio = !playAudio)" />
-
-                    if (playAudio)
+                <MudText Typo="Typo.h2">
+                    Answer @if (!string.IsNullOrEmpty(answerSpokenFile))
                     {
-                        <audio autoplay src="@answerSpokenFile" />
+                        <MudIconButton Icon="@Icons.Material.Filled.VolumeUp" OnClick="@(() => playAudio = !playAudio)" />
+
+                        if (playAudio)
+                        {
+                            <audio autoplay src="@answerSpokenFile" />
+                        }
                     }
-                }
                 </MudText>
                 <MudText Typo="Typo.body1">@answer</MudText>
                 <MudText Typo="Typo.h3">Relevant Episodes</MudText>
-                <MudList>
+                <MudStack>
                     @foreach (var episode in sources)
                     {
-                        <MudListItem>
-                            <MudCard>
-                                <MudCardContent>
-                                    <MudLink Href="@episode.Uri" Target="_blank">@episode.Title</MudLink>
-                                    <br />
-                                    <MudText Typo="Typo.caption">
-                                        Speakers:
-                                        <MudChipSet @bind-SelectedChips="selectedSpeakers" MultiSelection="true" Filter="true">
-                                            @foreach (string? speaker in episode.Speakers)
-                                            {
-                                                if (speaker is not null)
-                                                {
-                                                    <MudChip Color="Color.Primary" Icon="@Icons.Material.Filled.Person" Text="@speaker">@speaker</MudChip>
-                                                }
-                                            }
-                                        </MudChipSet>
+                        <MudCard>
+                            <MudCardContent>
+                                <MudStack>
+                                    <MudText Typo="Typo.subtitle1">
+                                        <MudLink Href="@episode.Uri" Target="_blank">@episode.Title</MudLink> (@episode.Date.ToLongDateString())
                                     </MudText>
-                                    <br />
-                                    <MudText Typo="Typo.caption">
-                                        Topics:
-                                        <MudChipSet @bind-SelectedChips="selectedTopics" MultiSelection="true" Filter="true">
-                                            @foreach (string? topic in episode.Topics)
-                                            {
-                                                if (topic is not null)
-                                                {
-                                                    <MudChip Color="Color.Secondary" Icon="@Icons.Material.Filled.Lightbulb" Text="@topic">@topic</MudChip>
-                                                }
-                                            }
-                                        </MudChipSet>
+                                    <MudText Typo="Typo.subtitle2">
+                                        Relevance: @episode.Relevance
                                     </MudText>
-                                </MudCardContent>
-                            </MudCard>
-                        </MudListItem>
+                                    <MudStack Row="true">
+                                        <MudText Typo="Typo.caption">
+                                            Speakers:
+                                            <MudChipSet @bind-SelectedChips="selectedSpeakers" MultiSelection="true" Filter="true">
+                                                @foreach (string? speaker in episode.Speakers)
+                                                {
+                                                    if (speaker is not null)
+                                                    {
+                                                        <MudChip Color="Color.Primary" Icon="@Icons.Material.Filled.Person" Text="@speaker">@speaker</MudChip>
+                                                    }
+                                                }
+                                            </MudChipSet>
+                                        </MudText>
+                                        <MudText Typo="Typo.caption">
+                                            Topics:
+                                            <MudChipSet @bind-SelectedChips="selectedTopics" MultiSelection="true" Filter="true">
+                                                @foreach (string? topic in episode.Topics)
+                                                {
+                                                    if (topic is not null)
+                                                    {
+                                                        <MudChip Color="Color.Secondary" Icon="@Icons.Material.Filled.Lightbulb" Text="@topic">@topic</MudChip>
+                                                    }
+                                                }
+                                            </MudChipSet>
+                                        </MudText>
+                                    </MudStack>
+                                    <MudExpansionPanels>
+                                        <MudExpansionPanel Text="Episode Summary">
+                                            @episode.Description
+                                        </MudExpansionPanel>
+                                    </MudExpansionPanels>
+                                </MudStack>
+                            </MudCardContent>
+                        </MudCard>
                     }
-                </MudList>
+                </MudStack>
             </MudCardContent>
         </MudCard>
     }

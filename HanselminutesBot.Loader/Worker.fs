@@ -61,10 +61,10 @@ let makeAOAIFunction () =
                        Description = "A summary of the podcast" |}
                 Topics =
                     {| Type = "string"
-                       Description = "A comman separated list of topics from the description" |}
+                       Description = "A comma separated list of topics from the description" |}
                 Speakers =
                     {| Type = "string"
-                       Description = "A comman separated list of speakers from the description" |} |}
+                       Description = "A comma separated list of speakers from the description" |} |}
            Required = [| "summary"; "topics"; "speakers" |] |}
 
     fd.Parameters <- BinaryData.FromObjectAsJson(d, jsonOptions)
