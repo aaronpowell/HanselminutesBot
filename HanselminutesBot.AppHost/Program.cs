@@ -66,7 +66,9 @@ IResourceBuilder<ProjectResource> memory = builder.AddProject<HanselminutesBot_M
     .WithReference(blob)
     .WithReference(postgres)
     .WithReference(memoryPipelineQueue)
-    .WithReference(openAI);
+    // KernelMemory doesn't support DI for OpenAIClient so we can't do this.
+    //.WithReference(openAI)
+    ;
 
 builder.AddProject<HanselminutesBot_Loader>("loader")
     .WithEnvironment("OpenAI__Endpoint", endpoint)
@@ -75,8 +77,7 @@ builder.AddProject<HanselminutesBot_Loader>("loader")
     .WithEnvironment("OpenAI__EmbeddingsDeployment", embeddingsDeployment)
     .WithReference(memory)
     .WithReference(buildIndexQueue)
-    // KernelMemory doesn't support DI for OpenAIClient so we can't do this.
-    //.WithReference(openAI)
+    .WithReference(openAI)
     ;
 
 builder.AddProject<HanselminutesBot_Frontend>("frontend")
