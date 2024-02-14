@@ -13,6 +13,7 @@ open Microsoft.KernelMemory
 open Azure.Storage.Queues
 open HanselminutesBot.Shared
 open Azure
+open Microsoft.Extensions.Configuration
 
 type CompletionPayload =
   { [<JsonConverter(typeof<CommaListJsonParser.CommaListJsonConverter>)>] speakers: string list
@@ -70,9 +71,9 @@ let makeAOAIFunction () =
     fd.Parameters <- BinaryData.FromObjectAsJson(d, jsonOptions)
     fd
 
-let processItem (fd: FunctionDefinition) (client: OpenAIClient) (item: SyndicationItem) =
+let processItem (fd: FunctionDefinition) (client: OpenAIClient) (config: IConfiguration) (item: SyndicationItem) =
     let description = item.Summary.Text
-    let opts = ChatCompletionsOptions("gpt-35-turbo", [ChatRequestSystemMessage systemMessage; ChatRequestUserMessage description])
+    let opts = ChatCompletionsOptions(config.["OpenAI:ChatDeployment"], [ChatRequestSystemMessage systemMessage; ChatRequestUserMessage description])
     opts.Functions.Add(fd)
     opts.FunctionCall <- fd
     client.GetChatCompletionsAsync opts
@@ -120,7 +121,8 @@ type Worker(
     logger: ILogger<Worker>,
     client: OpenAIClient,
     memoryClient: IKernelMemory,
-    queueServiceClient: QueueServiceClient) =
+    queueServiceClient: QueueServiceClient,
+    config: IConfiguration) =
     inherit BackgroundService()
 
     override __.ExecuteAsync(cancellationToken) =
@@ -134,7 +136,7 @@ type Worker(
                 let! messages = queueClient.ReceiveMessagesAsync(32, TimeSpan.FromSeconds 30.0, cancellationToken)
 
                 let importer' = importMemoryRecord memoryClient logger cancellationToken
-                let processItem' = processItem (makeAOAIFunction()) client
+                let processItem' = processItem (makeAOAIFunction()) client config
 
                 let! _ =
                     messages.Value
