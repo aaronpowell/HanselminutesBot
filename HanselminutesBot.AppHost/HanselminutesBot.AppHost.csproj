@@ -13,7 +13,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\HanselminuteBot.Shared\HanselminutesBot.Shared.fsproj" IsAspireProjectResource="false" />
+    <ProjectReference Include="..\HanselminutesBot.Shared\HanselminutesBot.Shared.fsproj" IsAspireProjectResource="false" />
     <ProjectReference Include="..\HanselminutesBot.Frontend\HanselminutesBot.Frontend.csproj" />
     <ProjectReference Include="..\HanselminutesBot.Loader\HanselminutesBot.Loader.fsproj" />
     <ProjectReference Include="..\HanselminutesBot.Memory\HanselminutesBot.Memory.fsproj" />
