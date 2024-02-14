@@ -22,11 +22,6 @@
     <PackageReference Include="System.ServiceModel.Syndication" />
   </ItemGroup>
   <ItemGroup>
-    <Content Include="Data\hanselminutes.rss">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
-  </ItemGroup>
-  <ItemGroup>
     <ProjectReference Include="..\HanselminutesBot.ServiceDefaults\HanselminutesBot.ServiceDefaults.csproj" />
     <ProjectReference Include="..\HanselminutesBot.Shared\HanselminutesBot.Shared.fsproj" />
   </ItemGroup>
