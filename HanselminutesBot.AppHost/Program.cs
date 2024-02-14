@@ -56,6 +56,8 @@ if (builder.Environment.IsDevelopment())
 IResourceBuilder<PostgresDatabaseResource> postgres = postgresContainerDefinition
     .AddDatabase("podcasts");
 
+IResourceBuilder<AzureOpenAIResource> openAI = builder.AddAzureOpenAI("AzureOpenAI");
+
 IResourceBuilder<ProjectResource> memory = builder.AddProject<HanselminutesBot_Memory>("memory")
     .WithEnvironment("OpenAI__Endpoint", endpoint)
     .WithEnvironment("OpenAI__Key", key)
@@ -63,7 +65,8 @@ IResourceBuilder<ProjectResource> memory = builder.AddProject<HanselminutesBot_M
     .WithEnvironment("OpenAI__EmbeddingsDeployment", embeddingsDeployment)
     .WithReference(blob)
     .WithReference(postgres)
-    .WithReference(memoryPipelineQueue);
+    .WithReference(memoryPipelineQueue)
+    .WithReference(openAI);
 
 builder.AddProject<HanselminutesBot_Loader>("loader")
     .WithEnvironment("OpenAI__Endpoint", endpoint)
@@ -71,7 +74,10 @@ builder.AddProject<HanselminutesBot_Loader>("loader")
     .WithEnvironment("OpenAI__ChatDeployment", chatDeployment)
     .WithEnvironment("OpenAI__EmbeddingsDeployment", embeddingsDeployment)
     .WithReference(memory)
-    .WithReference(buildIndexQueue);
+    .WithReference(buildIndexQueue)
+    // KernelMemory doesn't support DI for OpenAIClient so we can't do this.
+    //.WithReference(openAI)
+    ;
 
 builder.AddProject<HanselminutesBot_Frontend>("frontend")
     .WithEnvironment("Speech__Key", builder.Configuration["Speech:Key"])

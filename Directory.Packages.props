@@ -3,6 +3,7 @@
     <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
   </PropertyGroup>
   <ItemGroup>
+    <PackageVersion Include="Aspire.Azure.AI.OpenAI" Version="8.0.0-preview.3.24105.21" />
     <PackageVersion Include="Aspire.Azure.Storage.Queues" Version="8.0.0-preview.3.24105.21" />
     <PackageVersion Include="Aspire.Hosting" Version="8.0.0-preview.3.24105.21" />
     <PackageVersion Include="Aspire.Hosting.Azure" Version="8.0.0-preview.3.24105.21" />

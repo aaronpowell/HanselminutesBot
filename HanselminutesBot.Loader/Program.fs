@@ -3,8 +3,6 @@ open Microsoft.Extensions.DependencyInjection
 open Microsoft.KernelMemory
 open System
 open System.Net.Http
-open Azure.AI.OpenAI
-open Azure
 open HanselminutesBot.Shared
 
 let builder = Host.CreateApplicationBuilder()
@@ -19,19 +17,7 @@ builder.Services.AddSingleton<IKernelMemory>(fun (sp: IServiceProvider) ->
     let httpClient = sp.GetRequiredService<HttpClient>()
     MemoryWebClient("http://memory", httpClient) :> IKernelMemory) |> ignore
 
-builder.Services.AddSingleton<OpenAIClient>(fun (_) ->
-    let configuration = builder.Configuration
-    let endpoint =
-        match configuration.["OpenAI:Endpoint"] with
-        | null -> failwith "OpenAI:Endpoint not found in configuration"
-        | value -> value
-
-    let key =
-        match configuration.["OpenAI:Key"] with
-        | null -> failwith "OpenAI:Key not found in configuration"
-        | value -> value
-
-    OpenAIClient(Uri endpoint, AzureKeyCredential key)) |> ignore
+builder.AddAzureOpenAI("AzureOpenAI", fun settings -> settings.Tracing <- true)
 
 builder.Services.AddHostedService<Worker>() |> ignore
 builder.AddServiceDefaults() |> ignore
