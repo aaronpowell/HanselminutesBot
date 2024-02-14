@@ -74,7 +74,10 @@ public partial class Home
         });
         loading = false;
 
-        await Speak();
+        if (Configuration["Speech:Enabled"] == "true")
+        {
+            await Speak();
+        }
     }
 
     private async Task Speak()
